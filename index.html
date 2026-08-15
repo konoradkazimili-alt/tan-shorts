@@ -214,12 +214,47 @@
   const SUPABASE_ANON_KEY =
   "sb_publishable_prt_6MTntKYfGaBDunt45A_ObwVDfv-";
 
-  const supabaseClient =
-    supabase.createClient(
+let supabaseClient;
+
+try {
+
+  if (!window.supabase) {
+    throw new Error(
+      "Supabase library haijapakia."
+    );
+  }
+
+  supabaseClient =
+    window.supabase.createClient(
       SUPABASE_URL,
       SUPABASE_ANON_KEY
     );
-  console.log("TAN SHORTS JS IMEANZA");
+
+  console.log(
+    "TAN SHORTS: Supabase imeunganishwa."
+  );
+
+} catch (error) {
+
+  console.error(
+    "SUPABASE START ERROR:",
+    error
+  );
+
+  document.getElementById("feed").innerHTML = `
+    <div class="empty">
+      ❌ TAN SHORTS imepata kosa.
+      <br><br>
+      ${error.message}
+    </div>
+  `;
+
+}
+  
+    
+    
+    );
+  
 
   // --------------------------------------------
   // LOGIN UI
