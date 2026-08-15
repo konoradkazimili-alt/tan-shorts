@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TAN SHORTS</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #111;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #333;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 11px 16px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .login {
+      background: #19c37d;
+      color: white;
+    }
+
+    .logout {
+      background: #333;
+      color: white;
+    }
+
+    .upload-box {
+      padding: 15px;
+      background: #181818;
+    }
+
+    input[type="email"],
+    input[type="password"],
+    input[type="file"] {
+      width: 100%;
+      padding: 12px;
+      margin: 6px 0;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #222;
+      color: white;
+    }
+
+    .upload-btn {
+      width: 100%;
+      background: #19c37d;
+      color: white;
+      margin-top: 8px;
+    }
+
+    #message {
+      padding: 10px 15px;
+      color: #19c37d;
+    }
+
+    .feed {
+      max-width: 600px;
+      margin: auto;
+    }
+
+    .video-card {
+      position: relative;
+      margin-bottom: 12px;
+      background: #000;
+    }
+
+    video {
+      width: 100%;
+      height: 75vh;
+      object-fit: cover;
+      display: block;
+      background: #000;
+    }
+
+    .video-info {
+      position: absolute;
+      bottom: 15px;
+      left: 15px;
+      right: 15px;
+      text-shadow: 0 2px 5px black;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .login-box {
+      padding: 15px;
+      background: #181818;
+    }
+
+    .empty {
+      padding: 40px 20px;
+      text-align: center;
+      color: #aaa;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>🇹🇿 TAN SHORTS</h1>
+
+  <button id="authButton" class="login" onclick="showLogin()">
+    Ingia
+  </button>
+</header>
+
+<div id="loginBox" class="login-box hidden">
+  <h3>Ingia TAN SHORTS</h3>
+
+  <input
+    id="email"
+    type="email"
+    placeholder="Email yako"
+  >
+
+  <input
+    id="password"
+    type="password"
+    placeholder="Password"
+  >
+
+  <button class="login" onclick="login()">
+    Ingia
+  </button>
+
+  <button class="logout" onclick="signup()">
+    Tengeneza akaunti
+  </button>
+</div>
+
+<div id="uploadBox" class="upload-box hidden">
+
+  <h3>📹 Weka Video</h3>
+
+  <input
+    id="videoFile"
+    type="file"
+    accept="video/*"
+  >
+
+  <button
+    class="upload-btn"
+    onclick="uploadVideo()"
+  >
+    ⬆️ Upload Video
+  </button>
+
+</div>
+
+<div id="message"></div>
+
+<main id="feed" class="feed">
+  <div class="empty">
+    Inapakia TAN SHORTS...
+  </div>
+</main>
+
+<script>
+
+  /*
+    ============================================
+    TAN SHORTS - SUPABASE CONFIGURATION
+    ============================================
+
+    WEKA SUPABASE URL YAKO HAPA.
+
+    Project Ref yako ni:
+    kgyilusntkdtdnmmqgrx
+
+    URL itakuwa:
+    https://kgyilusntkdtdnmmqgrx.supabase.co
+
+    ANON KEY:
+    Ipate Supabase:
+    Project Settings > API > Publishable/Anon key
+  */
+
+  const SUPABASE_URL =
+    "https://kgyilusntkdtdnmmqgrx.supabase.co";
+
+  const SUPABASE_ANON_KEY =
+    "WEKA_ANON_KEY_YAKO_HAPA";
+
+  const supabaseClient =
+    supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+    );
+
+
+  // --------------------------------------------
+  // LOGIN UI
+  // --------------------------------------------
+
+  function showLogin() {
+
+    const box =
+      document.getElementById("loginBox");
+
+    box.classList.toggle("hidden");
+  }
+
+
+  // --------------------------------------------
+  // SIGN UP
+  // --------------------------------------------
+
+  async function signup() {
+
+    const email =
+      document.getElementById("email").value;
+
+    const password =
+      document.getElementById("password").value;
+
+    if (!email || !password) {
+
+      showMessage(
+        "Weka email na password kwanza."
+      );
+
+      return;
+    }
+
+    const { error } =
+      await supabaseClient.auth.signUp({
+        email,
+        password
+      });
+
+    if (error) {
+
+      showMessage(error.message);
+
+      return;
+    }
+
+    showMessage(
+      "Akaunti imetengenezwa. Angalia email yako kama confirmation inahitajika."
+    );
+  }
+
+
+  // --------------------------------------------
+  // LOGIN
+  // --------------------------------------------
+
+  async function login() {
+
+    const email =
+      document.getElementById("email").value;
+
+    const password =
+      document.getElementById("password").value;
+
+    if (!email || !password) {
+
+      showMessage(
+        "Weka email na password kwanza."
+      );
+
+      return;
+    }
+
+    const { error } =
+      await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
+
+    if (error) {
+
+      showMessage(error.message);
+
+      return;
+    }
+
+    document
+      .getElementById("loginBox")
+      .classList.add("hidden");
+
+    await updateAuth();
+
+    showMessage("Umeingia TAN SHORTS.");
+
+    loadVideos();
+  }
+
+
+  // --------------------------------------------
+  // LOGOUT
+  // --------------------------------------------
+
+  async function logout() {
+
+    await supabaseClient.auth.signOut();
+
+    await updateAuth();
+
+    showMessage("Umetoka kwenye akaunti.");
+  }
+
+
+  // --------------------------------------------
+  // AUTH STATUS
+  // --------------------------------------------
+
+  async function updateAuth() {
+
+    const {
+      data: { session }
+    } = await supabaseClient.auth.getSession();
+
+    const button =
+      document.getElementById("authButton");
+
+    const uploadBox =
+      document.getElementById("uploadBox");
+
+    if (session) {
+
+      button.textContent = "Toka";
+
+      button.className = "logout";
+
+      button.onclick = logout;
+
+      uploadBox.classList.remove("hidden");
+
+    } else {
+
+      button.textContent = "Ingia";
+
+      button.className = "login";
+
+      button.onclick = showLogin;
+
+      uploadBox.classList.add("hidden");
+    }
+  }
+
+
+  // --------------------------------------------
+  // UPLOAD VIDEO
+  // --------------------------------------------
+
+  async function uploadVideo() {
+
+    const file =
+      document.getElementById("videoFile").files[0];
+
+    if (!file) {
+
+      showMessage(
+        "Chagua video kwanza."
+      );
+
+      return;
+    }
+
+    const {
+      data: { session }
+    } = await supabaseClient.auth.getSession();
+
+    if (!session) {
+
+      showMessage(
+        "Ingia kwanza."
+      );
+
+      return;
+    }
+
+    if (!file.type.startsWith("video/")) {
+
+      showMessage(
+        "Tafadhali chagua video."
+      );
+
+      return;
+    }
+
+    showMessage(
+      "Uploading video..."
+    );
+
+    const safeName =
+      file.name
+        .replace(/[^a-zA-Z0-9._-]/g, "_");
+
+    const filePath =
+      session.user.id +
+      "/" +
+      Date.now() +
+      "-" +
+      safeName;
+
+    const { error } =
+      await supabaseClient
+        .storage
+        .from("Videos")
+        .upload(
+          filePath,
+          file,
+          {
+            cacheControl: "3600",
+            upsert: false
+          }
+        );
+
+    if (error) {
+
+      showMessage(
+        "Upload imekataa: " +
+        error.message
+      );
+
+      return;
+    }
+
+    document
+      .getElementById("videoFile")
+      .value = "";
+
+    showMessage(
+      "✅ Video imepakiwa!"
+    );
+
+    loadVideos();
+  }
+
+
+  // --------------------------------------------
+  // LOAD VIDEOS
+  // --------------------------------------------
+
+  async function loadVideos() {
+
+    const feed =
+      document.getElementById("feed");
+
+    feed.innerHTML =
+      '<div class="empty">Inapakia videos...</div>';
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .storage
+        .from("Videos")
+        .list(
+          "",
+          {
+            limit: 100,
+            sortBy: {
+              column: "created_at",
+              order: "desc"
+            }
+          }
+        );
+
+    if (error) {
+
+      feed.innerHTML =
+        '<div class="empty">Imeshindikana kupakia videos.</div>';
+
+      return;
+    }
+
+    const files =
+      data.filter(
+        item =>
+          item.name &&
+          !item.name.endsWith("/")
+      );
+
+    if (!files.length) {
+
+      feed.innerHTML =
+        '<div class="empty">Hakuna video bado.</div>';
+
+      return;
+    }
+
+    feed.innerHTML = "";
+
+    files.forEach(item => {
+
+      const path =
+        item.name;
+
+      const {
+        data: urlData
+      } =
+        supabaseClient
+          .storage
+          .from("Videos")
+          .getPublicUrl(path);
+
+      createVideo(
+        urlData.publicUrl,
+        item.name
+      );
+    });
+  }
+
+
+  // --------------------------------------------
+  // CREATE VIDEO CARD
+  // --------------------------------------------
+
+  function createVideo(
+    url,
+    name
+  ) {
+
+    const feed =
+      document.getElementById("feed");
+
+    const card =
+      document.createElement("div");
+
+    card.className =
+      "video-card";
+
+    card.innerHTML = `
+
+      <video
+        src="${url}"
+        controls
+        playsinline
+        preload="metadata">
+      </video>
+
+      <div class="video-info">
+        <strong>🇹🇿 TAN SHORTS</strong>
+        <br>
+        <small>${escapeHtml(name)}</small>
+      </div>
+
+    `;
+
+    feed.appendChild(card);
+  }
+
+
+  // --------------------------------------------
+  // MESSAGE
+  // --------------------------------------------
+
+  function showMessage(text) {
+
+    document
+      .getElementById("message")
+      .textContent = text;
+  }
+
+
+  // --------------------------------------------
+  // SECURITY
+  // --------------------------------------------
+
+  function escapeHtml(text) {
+
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+
+  // --------------------------------------------
+  // START APP
+  // --------------------------------------------
+
+  updateAuth();
+
+  loadVideos();
+
+</script>
+
+</body>
+</html>
