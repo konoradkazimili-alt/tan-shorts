@@ -555,4 +555,34 @@ async function loadVideos() {
     );
   });
 }
-  
+  }
+}
+
+// ==========================================
+// KUANZISHA TAN SHORTS
+// ==========================================
+
+async function startTANShorts() {
+  try {
+    await updateAuth();
+    await loadVideos();
+  } catch (error) {
+    console.error("TAN SHORTS ERROR:", error);
+
+    document.getElementById("feed").innerHTML = `
+      <div class="empty">
+        ❌ Kuna tatizo la kuanzisha TAN SHORTS.
+        <br><br>
+        ${error.message}
+      </div>
+    `;
+  }
+}
+
+startTANShorts();  
+startTANShorts();
+
+</script>
+
+</body>
+</html>
