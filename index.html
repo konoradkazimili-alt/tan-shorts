@@ -466,154 +466,58 @@
   // --------------------------------------------
   // LOAD VIDEOS
   // --------------------------------------------
+async function loadVideos() {
+  const feed = document.getElementById("feed");
 
-  async function loadVideos() {
+  feed.innerHTML =
+    '<div class="empty">Inapakia videos...</div>';
 
-    const feed =
-      document.getElementById("feed");
+  const { data, error } =
+    await supabaseClient
+      .storage
+      .from("Videos")
+      .list("", {
+        limit: 100,
+        sortBy: {
+          column: "created_at",
+          order: "desc"
+        }
+      });
+
+  if (error) {
+    console.error("VIDEO ERROR:", error);
 
     feed.innerHTML =
-      '<div class="empty">Inapakia videos...</div>';
+      '<div class="empty">Imeshindikana kupakia videos.</div>';
 
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
+    return;
+  }
+
+  const files = data.filter(
+    item =>
+      item.name &&
+      !item.name.endsWith("/")
+  );
+
+  if (files.length === 0) {
+    feed.innerHTML =
+      '<div class="empty">Hakuna videos bado.</div>';
+    return;
+  }
+
+  feed.innerHTML = "";
+
+  files.forEach(file => {
+    const { data: urlData } =
+      supabaseClient
         .storage
         .from("Videos")
-        .list(
-          "",
-          {
-            limit: 100,
-            sortBy: {
-              column: "created_at",
-              order: "desc"
-            }
-          }
-        );
+        .getPublicUrl(file.name);
 
-    if (error) {
-
-      feed.innerHTML =
-        '<div class="empty">Imeshindikana kupakia videos.</div>';
-
-      return;
-    }
-
-    const files =
-      data.filter(
-        item =>
-          item.name &&
-          !item.name.endsWith("/")
-      );
-
-    if (!files.length) {
-
-      feed.innerHTML =
-        '<div class="empty">Hakuna video bado.</div>';
-
-      return;
-    }
-
-    feed.innerHTML = "";
-
-    files.forEach(item => {
-
-      const path =
-        item.name;
-
-      const {
-        data: urlData
-      } =
-        supabaseClient
-          .storage
-          .from("Videos")
-          .getPublicUrl(path);
-
-      createVideo(
-        urlData.publicUrl,
-        item.name
-      );
-    });
-  }
-
-
-  // --------------------------------------------
-  // CREATE VIDEO CARD
-  // --------------------------------------------
-
-  function createVideo(
-    url,
-    name
-  ) {
-
-    const feed =
-      document.getElementById("feed");
-
-    const card =
-      document.createElement("div");
-
-    card.className =
-      "video-card";
-
-    card.innerHTML = `
-
-      <video
-        src="${url}"
-        controls
-        playsinline
-        preload="metadata">
-      </video>
-
-      <div class="video-info">
-        <strong>🇹🇿 TAN SHORTS</strong>
-        <br>
-        <small>${escapeHtml(name)}</small>
-      </div>
-
-    `;
-
-    feed.appendChild(card);
-  }
-
-
-  // --------------------------------------------
-  // MESSAGE
-  // --------------------------------------------
-
-  function showMessage(text) {
-
-    document
-      .getElementById("message")
-      .textContent = text;
-  }
-
-
-  // --------------------------------------------
-  // SECURITY
-  // --------------------------------------------
-
-  function escapeHtml(text) {
-
-    return text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-
-  // --------------------------------------------
-  // START APP
-  // --------------------------------------------
-
-  updateAuth();
-
-  loadVideos();
-
-</script>
-
-</body>
-</html>
+    createVideo(
+      urlData.publicUrl,
+      file.name
+    );
+  });
+}
+  
