@@ -501,88 +501,115 @@ try {
   // --------------------------------------------
   // LOAD VIDEOS
   // --------------------------------------------
-async function loadVideos() {
+  async function loadVideos() {
+
   const feed = document.getElementById("feed");
 
   feed.innerHTML =
     '<div class="empty">Inapakia videos...</div>';
 
-  const { data, error } =
+  // Pata folders za users ndani ya Videos
+  const { data: users, error: usersError } =
     await supabaseClient
       .storage
       .from("Videos")
       .list("", {
         limit: 100,
         sortBy: {
-          column: "created_at",
+          column: "name",
           order: "desc"
         }
       });
 
-  if (error) {
-    console.error("VIDEO ERROR:", error);
+  if (usersError) {
+    console.error("VIDEO USERS ERROR:", usersError);
 
     feed.innerHTML =
-      '<div class="empty">Imeshindikana kupakia videos.</div>';
+      '<div class="empty">' +
+      'Imeshindikana kupakia videos.<br><br>' +
+      usersError.message +
+      '</div>';
 
     return;
   }
 
-  const files = data.filter(
-    item =>
-      item.name &&
-      !item.name.endsWith("/")
-  );
-
-  if (files.length === 0) {
+  if (!users || users.length === 0) {
     feed.innerHTML =
-      '<div class="empty">Hakuna videos bado.</div>';
+      '<div class="empty">Hakuna video bado.</div>';
+
     return;
   }
 
   feed.innerHTML = "";
 
-  files.forEach(file => {
-    const { data: urlData } =
-      supabaseClient
+  // Kila folder ni user ID
+  for (const userFolder of users) {
+
+    // Hakikisha tunashughulika na folder
+    if (!userFolder.name) continue;
+
+    const { data: files, error: filesError } =
+      await supabaseClient
         .storage
         .from("Videos")
-        .getPublicUrl(file.name);
+        .list(userFolder.name, {
+          limit: 100,
+          sortBy: {
+            column: "created_at",
+            order: "desc"
+          }
+        });
 
-    createVideo(
-      urlData.publicUrl,
-      file.name
-    );
-  });
-}
+    if (filesError) {
+      console.error(
+        "VIDEO FILE ERROR:",
+        filesError
+      );
+      continue;
+    }
+
+    if (!files || files.length === 0) {
+      continue;
+    }
+
+    for (const file of files) {
+
+      if (!file.name) continue;
+
+      // Path kamili ya video
+      const fullPath =
+        userFolder.name +
+        "/" +
+        file.name;
+
+      // Pata public URL
+      const { data: urlData } =
+        supabaseClient
+          .storage
+          .from("Videos")
+          .getPublicUrl(fullPath);
+
+      if (!urlData || !urlData.publicUrl) {
+        console.error(
+          "PUBLIC URL IMESHINDIKANA:",
+          fullPath
+        );
+        continue;
+      }
+
+      createVideo(
+        urlData.publicUrl,
+        file.name
+      );
+    }
+  }
+
+  // Kama hakuna video iliyopatikana
+  if (feed.innerHTML.trim() === "") {
+
+    feed.innerHTML =
+      '<div class="empty">' +
+      'Hakuna video bado. Upload video yako ya kwanza.' +
+      '</div>';
   }
 }
-
-// ==========================================
-// KUANZISHA TAN SHORTS
-// ==========================================
-
-async function startTANShorts() {
-  try {
-    await updateAuth();
-    await loadVideos();
-  } catch (error) {
-    console.error("TAN SHORTS ERROR:", error);
-
-    document.getElementById("feed").innerHTML = `
-      <div class="empty">
-        ❌ Kuna tatizo la kuanzisha TAN SHORTS.
-        <br><br>
-        ${error.message}
-      </div>
-    `;
-  }
-}
-
-startTANShorts();  
-
-
-</script>
-
-</body>
-</html>
