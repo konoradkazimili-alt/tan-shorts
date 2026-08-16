@@ -502,97 +502,76 @@ try {
   // LOAD VIDEOS
   // --------------------------------------------
   async function loadVideos() {
-
   const feed = document.getElementById("feed");
 
   feed.innerHTML =
-    '<div class="empty">Inapakia videos...</div>';
+    '<div class="empty">Inapakia TAN SHORTS...</div>';
 
-  // Pata folders za users ndani ya Videos
-  const { data: users, error: usersError } =
-    await supabaseClient
-      .storage
-      .from("Videos")
-      .list("", {
-        limit: 100,
-        sortBy: {
-          column: "name",
-          order: "desc"
-        }
-      });
-
-  if (usersError) {
-    console.error("VIDEO USERS ERROR:", usersError);
-
-    feed.innerHTML =
-      '<div class="empty">' +
-      'Imeshindikana kupakia videos.<br><br>' +
-      usersError.message +
-      '</div>';
-
-    return;
-  }
-
-  if (!users || users.length === 0) {
-    feed.innerHTML =
-      '<div class="empty">Hakuna video bado.</div>';
-
-    return;
-  }
-
-  feed.innerHTML = "";
-
-  // Kila folder ni user ID
-  for (const userFolder of users) {
-
-    // Hakikisha tunashughulika na folder
-    if (!userFolder.name) continue;
-
-    const { data: files, error: filesError } =
+  try {
+    const { data: files, error } =
       await supabaseClient
         .storage
         .from("Videos")
-        .list(userFolder.name, {
+        .list("", {
           limit: 100,
           sortBy: {
-            column: "created_at",
+            column: "name",
             order: "desc"
           }
         });
 
-    if (filesError) {
-      console.error(
-        "VIDEO FILE ERROR:",
-        filesError
-      );
-      continue;
+    if (error) {
+      console.error("VIDEO ERROR:", error);
+
+      feed.innerHTML =
+        '<div class="empty">' +
+        '❌ Imeshindikana kupakia videos.<br><br>' +
+        error.message +
+        '</div>';
+
+      return;
     }
 
     if (!files || files.length === 0) {
-      continue;
+      feed.innerHTML =
+        '<div class="empty">Hakuna video bado. Upload video yako.</div>';
+
+      return;
     }
+
+    feed.innerHTML = "";
+
+    let videoCount = 0;
 
     for (const file of files) {
 
+      // Tunataka mafaili ya video tu
       if (!file.name) continue;
 
-      // Path kamili ya video
-      const fullPath =
-        userFolder.name +
-        "/" +
-        file.name;
+      const lowerName = file.name.toLowerCase();
 
-      // Pata public URL
-      const { data: urlData } =
-        supabaseClient
-          .storage
-          .from("Videos")
-          .getPublicUrl(fullPath);
+      if (
+        !lowerName.endsWith(".mp4") &&
+        !lowerName.endsWith(".webm") &&
+        !lowerName.endsWith(".mov") &&
+        !lowerName.endsWith(".m4v")
+      ) {
+        continue;
+      }
 
-      if (!urlData || !urlData.publicUrl) {
+      const {
+        data: urlData,
+        error: urlError
+      } = supabaseClient
+        .storage
+        .from("Videos")
+        .getPublicUrl(file.name);
+
+      if (urlError || !urlData || !urlData.publicUrl) {
         console.error(
-          "PUBLIC URL IMESHINDIKANA:",
-          fullPath
+          "PUBLIC URL ERROR:",
+          file.name,
+          urlError
         );
         continue;
       }
@@ -601,15 +580,26 @@ try {
         urlData.publicUrl,
         file.name
       );
-    }
-  }
 
-  // Kama hakuna video iliyopatikana
-  if (feed.innerHTML.trim() === "") {
+      videoCount++;
+    }
+
+    if (videoCount === 0) {
+      feed.innerHTML =
+        '<div class="empty">Hakuna video ya MP4 iliyopatikana.</div>';
+    }
+
+  } catch (error) {
+
+    console.error(
+      "LOAD VIDEOS ERROR:",
+      error
+    );
 
     feed.innerHTML =
       '<div class="empty">' +
-      'Hakuna video bado. Upload video yako ya kwanza.' +
+      '❌ Kuna tatizo la kupakia TAN SHORTS.<br><br>' +
+      error.message +
       '</div>';
   }
 }
